@@ -37,6 +37,65 @@ struct DynamicCamera {
                 const sf::Vector2f& trackedPosWorld,      // world coords of player to track
                 const sf::Vector2f& trackedVelocityWorld  // world velocity of player to track
     ) {
+
+        // set camera to its position without lookahead
+        camera.setCameraCenter(cameraUnadjustedCenter);
+        
+        // get players horizontal position as a percent of the window
+        float playerPercent = camera.worldToWindowPercent(trackedPosWorld).x;
+
+        // convert lookahead distance from window percentage to world units
+        float lookAheadWorld = camera.windowPercentToWorldDist({lookAhead, 0.f}).x;
+
+        // if player moves left make lookahead distance negative
+        if (trackedVelocityWorld.x < 0.f) {
+            lookAheadWorld = -lookAheadWorld;
+        }
+
+        // if player stops moving remove lookahead slowly
+        else if (trackedVelocityWorld.x == 0.f) {
+            lookAheadWorld = 0.f;
+        }
+
+        // smoothly move lookahead towards its target using ema
+        lookaheadState += alpha * (lookAheadWorld - lookaheadState);
+
+        // how far the camera needs to move
+        float distance = 0.f;
+
+        // if player is beyond the left red line move camera immediately
+        if (playerPercent < softZoneX.min) {
+            distance = playerPercent - softZoneX.min;
+        }
+
+        // if player is past the right red line move camera immediately
+        else if (playerPercent > softZoneX.max) {
+            distance = playerPercent - softZoneX.max;
+        }
+
+        // if player is between the left green and red lines move camera smoothly
+        else if (playerPercent < deadZoneX.min) {
+            distance = (playerPercent - deadZoneX.min) * alpha;
+        }
+
+        // if player is between the right green and red lines move camera smoothly
+        else if (playerPercent > deadZoneX.max) {
+            distance = (playerPercent - deadZoneX.max) * alpha;
+        }
+
+        // if player is between the green lines camera does not need to move
+
+        // convert camera movement from window percentage to world units
+        float distanceWorld = camera.windowPercentToWorldDist({distance, 0.f}).x;
+
+        // move camera using the normal displacement and smoothed lookahead
+        camera.setCameraCenter(cameraUnadjustedCenter + sf::Vector2f{distanceWorld + lookaheadState, 0.f});
+
+        // update camera position without lookahead
+        cameraUnadjustedCenter.x += distanceWorld;
+
+    
+
         // TODO: (HINTS/outline)
         // collect statistics on the player position and velocity in (normalized, if you like)
         // window coordinates. Compute lookAhead distance in world coords, adjusting for
