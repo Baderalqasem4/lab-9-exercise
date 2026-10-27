@@ -68,25 +68,28 @@ int main() {
     float backgroundScaleFactor = WORLD_HEIGHT / WORLD_TEX_HEIGHT;
     backgroundSprite.setScale({backgroundScaleFactor, backgroundScaleFactor});
 
-    sf::RectangleShape leftSoftLine({4, 720});
+    // The OS can create a smaller window than requested; match the camera's view size.
+    const sf::Vector2f windowSize = window.getView().getSize();
+
+    sf::RectangleShape leftSoftLine({LINE_WIDTH, windowSize.y});
     leftSoftLine.setFillColor(sf::Color(0, 255, 0, 128));
     leftSoftLine.setOrigin({LINE_WIDTH / 2, 0});
-    leftSoftLine.setPosition({WINDOW_WIDTH / 3.f, 0});
+    leftSoftLine.setPosition({windowSize.x * SOFT_LIMIT_PERCENT, 0});
 
-    sf::RectangleShape rightSoftLine({4, 720});
+    sf::RectangleShape rightSoftLine({LINE_WIDTH, windowSize.y});
     rightSoftLine.setFillColor(sf::Color(0, 255, 0, 128));
     rightSoftLine.setOrigin({LINE_WIDTH / 2, 0});
-    rightSoftLine.setPosition({WINDOW_WIDTH * 2.f / 3.f, 0});
+    rightSoftLine.setPosition({windowSize.x * (1.f - SOFT_LIMIT_PERCENT), 0});
 
-    sf::RectangleShape leftHardLine({4, 720});
+    sf::RectangleShape leftHardLine({LINE_WIDTH, windowSize.y});
     leftHardLine.setFillColor(sf::Color(255, 0, 0, 128));
     leftHardLine.setOrigin({LINE_WIDTH / 2, 0});
-    leftHardLine.setPosition({WINDOW_WIDTH * HARD_LIMIT_PERCENT, 0});
+    leftHardLine.setPosition({windowSize.x * HARD_LIMIT_PERCENT, 0});
 
-    sf::RectangleShape rightHardLine({4, 720});
+    sf::RectangleShape rightHardLine({LINE_WIDTH, windowSize.y});
     rightHardLine.setFillColor(sf::Color(255, 0, 0, 128));
     rightHardLine.setOrigin({LINE_WIDTH / 2, 0});
-    rightHardLine.setPosition({WINDOW_WIDTH * (1.f - HARD_LIMIT_PERCENT), 0});
+    rightHardLine.setPosition({windowSize.x * (1.f - HARD_LIMIT_PERCENT), 0});
 
     sf::RectangleShape target({10, 10});
     target.setFillColor(sf::Color::Yellow);
@@ -97,7 +100,7 @@ int main() {
 
     sf::View worldView = window.getView();
     sf::View guiView = window.getView();
-    Camera camera(sf::Vector2f(window.getSize()), {WINDOW_WIDTH * 0.5f, WINDOW_HEIGHT * 0.5f});
+    Camera camera(windowSize, {WINDOW_WIDTH * 0.5f, WINDOW_HEIGHT * 0.5f});
     DynamicCamera dynamicCam{.alpha = SOFT_CAMERA_ALPHA,
                              .deadZoneX = {SOFT_LIMIT_PERCENT, 1.f - SOFT_LIMIT_PERCENT},
                              .softZoneX = {HARD_LIMIT_PERCENT, 1.f - HARD_LIMIT_PERCENT},
@@ -133,10 +136,10 @@ int main() {
         // camera
         dynamicCam.update(camera, player.position, player.velocity);
         // update gui
-        leftSoftLine.setPosition({(float)WINDOW_WIDTH * dynamicCam.deadZoneX.min, 0.f});
-        leftHardLine.setPosition({(float)WINDOW_WIDTH * dynamicCam.softZoneX.min, 0.f});
-        rightHardLine.setPosition({(float)WINDOW_WIDTH * dynamicCam.softZoneX.max, 0.f});
-        rightSoftLine.setPosition({(float)WINDOW_WIDTH * dynamicCam.deadZoneX.max, 0.f});
+        leftSoftLine.setPosition({windowSize.x * dynamicCam.deadZoneX.min, 0.f});
+        leftHardLine.setPosition({windowSize.x * dynamicCam.softZoneX.min, 0.f});
+        rightHardLine.setPosition({windowSize.x * dynamicCam.softZoneX.max, 0.f});
+        rightSoftLine.setPosition({windowSize.x * dynamicCam.deadZoneX.max, 0.f});
 
         worldView.setCenter(camera.getCameraCenter());
         window.clear(sf::Color::Black);
